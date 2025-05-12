@@ -2,7 +2,7 @@
 
 <!--  imagem do app  -->
 
-<img src="./public/interGraph.logo.png" alt="logo"/>
+<img src="./public/interGraph.logo.png"/>
 
 <div align="center">
   <img src="https://img.shields.io/badge/Next.js-15.2.4-black?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
