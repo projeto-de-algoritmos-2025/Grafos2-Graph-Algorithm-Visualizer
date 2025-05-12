@@ -17,6 +17,7 @@ interface GraphCanvasProps {
   onNodeUpdate?: (id: number, newId: number) => void;
   onEdgeUpdate?: (sourceId: number, targetId: number, weight: number) => void;
   onEdgeSelect?: (sourceId: number, targetId: number, weight: number) => void;
+  selectedEdge?: { source: number; target: number; weight: number } | null;
 }
 
 export default function GraphCanvas({
@@ -31,6 +32,7 @@ export default function GraphCanvas({
   onNodeUpdate,
   onEdgeUpdate,
   onEdgeSelect,
+  selectedEdge,
 }: GraphCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [draggedNodeId, setDraggedNodeId] = useState<number | null>(null);
@@ -42,6 +44,10 @@ export default function GraphCanvas({
     y: number;
   } | null>(null);
   const [newNodeId, setNewNodeId] = useState<string>("");
+  const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   const NODE_RADIUS = 20;
   const EDGE_ARROW_SIZE = 10;
@@ -56,6 +62,10 @@ export default function GraphCanvas({
 
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+    ctx.translate(offset.x, offset.y);
+    ctx.scale(scale, scale);
 
     // Draw edges
     graphData.edges.forEach((edge) => {
@@ -83,14 +93,90 @@ export default function GraphCanvas({
     graphData.nodes.forEach((node) => {
       drawNode(ctx, node, algorithmStep);
     });
-  }, [graphData, edgeStartNodeId, mousePos, algorithmStep]);
+
+    ctx.restore();
+  }, [graphData, edgeStartNodeId, mousePos, algorithmStep, scale, offset]);
+
+  // Handle mouse events for zoom and pan
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const newScale = Math.min(Math.max(0.5, scale - e.deltaY * 0.001), 3);
+      setScale(newScale);
+    };
+
+    const handleMouseDown = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      if (!rect) return;
+
+      // Transform mouse coordinates to account for zoom and pan
+      const x = (e.clientX - rect.left - offset.x) / scale;
+      const y = (e.clientY - rect.top - offset.y) / scale;
+
+      // Check if clicked on a node
+      const clickedNode = graphData.nodes.find(
+        (node) =>
+          Math.sqrt(Math.pow(node.x - x, 2) + Math.pow(node.y - y, 2)) <
+          NODE_RADIUS
+      );
+
+      // Check if clicked on an edge
+      const clickedEdge = graphData.edges.find((edge) => {
+        const sourceNode = graphData.nodes.find((n) => n.id === edge.source);
+        const targetNode = graphData.nodes.find((n) => n.id === edge.target);
+        if (sourceNode && targetNode) {
+          return isPointOnEdge(
+            x,
+            y,
+            sourceNode.x,
+            sourceNode.y,
+            targetNode.x,
+            targetNode.y
+          );
+        }
+        return false;
+      });
+
+      // If clicked on empty space, enable panning
+      if (!clickedNode && !clickedEdge) {
+        setIsDragging(true);
+        setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+      }
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        setOffset({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    canvas.addEventListener("wheel", handleWheel);
+    canvas.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      canvas.removeEventListener("wheel", handleWheel);
+      canvas.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [scale, offset, dragStart, isDragging, graphData]);
 
   const handleMouseDown = (e: MouseEvent) => {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    // Transform mouse coordinates to account for zoom and pan
+    const x = (e.clientX - rect.left - offset.x) / scale;
+    const y = (e.clientY - rect.top - offset.y) / scale;
 
     // Check if clicked on a node
     const clickedNode = graphData.nodes.find(
@@ -160,8 +246,9 @@ export default function GraphCanvas({
 
     const handleMouseMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      // Transform mouse coordinates to account for zoom and pan
+      const x = (e.clientX - rect.left - offset.x) / scale;
+      const y = (e.clientY - rect.top - offset.y) / scale;
 
       setMousePos({ x, y });
 
@@ -172,8 +259,9 @@ export default function GraphCanvas({
 
     const handleMouseUp = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      // Transform mouse coordinates to account for zoom and pan
+      const x = (e.clientX - rect.left - offset.x) / scale;
+      const y = (e.clientY - rect.top - offset.y) / scale;
 
       if (edgeStartNodeId !== null) {
         // Check if released on a node
@@ -237,6 +325,8 @@ export default function GraphCanvas({
     onEdgeAdd,
     onNodeMove,
     onEdgeSelect,
+    scale,
+    offset,
   ]);
 
   const handleNodeIdUpdate = () => {
@@ -319,6 +409,11 @@ export default function GraphCanvas({
         (!edge.directed && e.source === edge.target && e.target === edge.source)
     );
 
+    const isSelected = selectedEdge && (
+      (selectedEdge.source === edge.source && selectedEdge.target === edge.target) ||
+      (!edge.directed && selectedEdge.source === edge.target && selectedEdge.target === edge.source)
+    );
+
     const dx = targetNode.x - sourceNode.x;
     const dy = targetNode.y - sourceNode.y;
     const angle = Math.atan2(dy, dx);
@@ -336,6 +431,9 @@ export default function GraphCanvas({
 
     if (isHighlighted) {
       ctx.strokeStyle = "#ff9500";
+      ctx.lineWidth = 3;
+    } else if (isSelected) {
+      ctx.strokeStyle = "#3b82f6"; // Blue color for selected edge
       ctx.lineWidth = 3;
     } else {
       ctx.strokeStyle = "#64748b";
@@ -356,7 +454,7 @@ export default function GraphCanvas({
         endX - EDGE_ARROW_SIZE * Math.cos(angle + Math.PI / 6),
         endY - EDGE_ARROW_SIZE * Math.sin(angle + Math.PI / 6)
       );
-      ctx.fillStyle = isHighlighted ? "#ff9500" : "#64748b";
+      ctx.fillStyle = isHighlighted ? "#ff9500" : isSelected ? "#3b82f6" : "#64748b";
       ctx.fill();
     }
 
@@ -370,7 +468,7 @@ export default function GraphCanvas({
     ctx.arc(midX, midY, 12, 0, 2 * Math.PI);
     ctx.fill();
 
-    ctx.fillStyle = "#334155";
+    ctx.fillStyle = isSelected ? "#3b82f6" : "#334155";
     ctx.font = "12px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -431,8 +529,8 @@ export default function GraphCanvas({
         <div
           className="absolute bg-white p-2 rounded-lg shadow-md border"
           style={{
-            left: `${editingNode.x + 30}px`,
-            top: `${editingNode.y}px`,
+            left: `${editingNode.x * scale + offset.x + 30}px`,
+            top: `${editingNode.y * scale + offset.y}px`,
             zIndex: 10,
           }}
         >
@@ -444,7 +542,6 @@ export default function GraphCanvas({
                 setNewNodeId(e.target.value);
               }}
               className="w-20"
-              // min="1"
               autoFocus
             />
             <Button size="sm" onClick={handleNodeIdUpdate}>

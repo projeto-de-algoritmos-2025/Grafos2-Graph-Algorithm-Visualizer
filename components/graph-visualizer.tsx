@@ -231,8 +231,8 @@ useEffect(() => {
         edges: [...prev.edges, { ...edge, directed: true }],
       }));
     } else {
-      const undirected = { ...edge, directed: false };
-      const reverse = {
+      const undirectedEdge = { ...edge, directed: false };
+      const reverseEdge = {
         source: edge.target,
         target: edge.source,
         weight: edge.weight,
@@ -240,7 +240,7 @@ useEffect(() => {
       };
       setGraphData(prev => ({
         ...prev,
-        edges: [...prev.edges, undirected, reverse],
+        edges: [...prev.edges, undirectedEdge, reverseEdge],
       }));
     }
   };
@@ -275,12 +275,17 @@ useEffect(() => {
   ) => {
     setGraphData((prev) => ({
       ...prev,
-      edges: prev.edges.map((edge) =>
-        (edge.source === sourceId && edge.target === targetId) ||
-        (!edge.directed && edge.source === targetId && edge.target === sourceId)
-          ? { ...edge, weight }
-          : edge
-      ),
+      edges: prev.edges.map((edge) => {
+        // Check if this is the edge we want to update (in either direction for undirected edges)
+        const isTargetEdge =
+          (edge.source === sourceId && edge.target === targetId) ||
+          (!edge.directed && edge.source === targetId && edge.target === sourceId);
+
+        if (isTargetEdge) {
+          return { ...edge, weight };
+        }
+        return edge;
+      }),
     }));
   };
 
@@ -289,8 +294,17 @@ useEffect(() => {
     targetId: number,
     weight: number
   ) => {
-    setSelectedEdge({ source: sourceId, target: targetId, weight });
-    setInputWeight(weight.toString());
+    // Find the edge in either direction for undirected edges
+    const edge = graphData.edges.find(
+      (e) =>
+        (e.source === sourceId && e.target === targetId) ||
+        (!e.directed && e.source === targetId && e.target === sourceId)
+    );
+
+    if (edge) {
+      setSelectedEdge({ source: edge.source, target: edge.target, weight: edge.weight });
+      setInputWeight(edge.weight.toString());
+    }
   };
 
   const updateSelectedEdgeWeight = (weightStr: string) => {
@@ -327,19 +341,6 @@ useEffect(() => {
       sourceNode,
       targetNodeValue
     );
-
-    const hasUndirectedEdge = graphData.edges.some(edge => !edge.directed);
-      if (selectedAlgorithm === "dijkstra" && hasUndirectedEdge) {
-        const invalidEdge = graphData.edges.find(edge => !edge.directed);
-        if (invalidEdge) {
-          setDialogContent({
-            title: "Aresta não-direcionada",
-            description: `A aresta entre ${invalidEdge.source} e ${invalidEdge.target} não é direcionada. O algoritmo de Dijkstra requer grafos direcionados.`,
-          });
-          setShowWeightDialog(true); // Reutiliza o mesmo Dialog
-          return;
-        }
-      }
 
     setAlgorithmSteps(steps);
     setCurrentStep(0);
@@ -756,22 +757,19 @@ useEffect(() => {
             <div className="border rounded-lg overflow-hidden bg-background">
                 <GraphCanvas
                   graphData={graphData}
-                  activeTool={activeTool ?? "node"}
+                  activeTool={activeTool}
+                  algorithmStep={algorithmSteps[currentStep]}
                   onNodeAdd={handleNodeAdd}
                   onEdgeAdd={handleEdgeAdd}
                   onNodeMove={handleNodeMove}
                   onNodeUpdate={handleNodeUpdate}
                   onEdgeUpdate={handleEdgeUpdate}
-                  onEdgeSelect={(source, target, weight) => {
-                    handleEdgeSelect(source, target, weight);
-                    setSelectedNode(null);
-                  }}
-                  algorithmStep={algorithmSteps[currentStep]}
-                  width={500}
+                  onEdgeSelect={handleEdgeSelect}
+                  selectedEdge={selectedEdge}
+                  width={650}
                   height={500}
                 />
               </div>
-
 
             <Card className="w-full">
               <CardContent className="p-4">
