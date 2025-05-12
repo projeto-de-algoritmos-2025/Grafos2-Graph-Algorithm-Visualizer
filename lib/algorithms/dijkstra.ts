@@ -13,7 +13,6 @@ export function runDijkstra(
   const unvisited = new Set(nodes)
   const visitOrder: number[] = [] // Para rastrear a ordem de visita dos nós
 
-  console.log(graphData)
   // Initialize distances
   for (const node of nodes) {
     distances[node] = node === sourceNode ? 0 : Number.POSITIVE_INFINITY
