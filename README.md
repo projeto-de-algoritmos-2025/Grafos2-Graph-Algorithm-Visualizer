@@ -1,5 +1,9 @@
 # Graph Algorithm Visualizer
 
+<!--  imagem do app  -->
+
+<img src="./public/interGraph.logo.png" alt="logo"/>
+
 <div align="center">
   <img src="https://img.shields.io/badge/Next.js-15.2.4-black?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
   <img src="https://img.shields.io/badge/React-19-blue?style=for-the-badge&logo=react&logoColor=white" alt="React" />
