@@ -1,12 +1,19 @@
-# Graph Algorithm Visualizer
-
-<img src="./public/interGraph.logo.png"/>
+<table>
+  <tr>
+    <td><img src="./public/interGraph.png" alt="InterGraph Logo" width="70" height="70"></td>
+    <td><h1 style="margin-left: 16px; font-size: 2.5em;">InterGraph</h1></td>
+  </tr>
+</table>
 
 <div align="center">
   <img src="https://img.shields.io/badge/Next.js-15.2.4-black?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
   <img src="https://img.shields.io/badge/React-19-blue?style=for-the-badge&logo=react&logoColor=white" alt="React" />
   <img src="https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/TailwindCSS-3.4.17-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="TailwindCSS" />
+</div>
+
+<div align="center">
+  <img src="./public/InterGraph.gif" alt="Demonstração InterGraph" width="700" />
 </div>
 
 ## 📋 Sobre o Projeto
