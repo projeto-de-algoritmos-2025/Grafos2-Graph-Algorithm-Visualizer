@@ -1,6 +1,6 @@
 <table>
   <tr>
-    <td><img src="./public/interGraph.png" alt="InterGraph Logo" width="70" height="70"></td>
+    <td><img src="https://github.com/projeto-de-algoritmos-2025/Grafos2-InterGraph/blob/main/public/interGraph.png?raw=true" width="70" height="70"></td>
     <td><h1 style="margin-left: 16px; font-size: 2.5em;">InterGraph</h1></td>
   </tr>
 </table>
@@ -13,7 +13,7 @@
 </div>
 
 <div align="center">
-  <img src="./public/InterGraph.gif" alt="Demonstração InterGraph" width="700" />
+  <img src="https://github.com/projeto-de-algoritmos-2025/Grafos2-InterGraph/blob/main/public/InterGraph.gif?raw=true" alt="Demonstração InterGraph" width="700" />
 </div>
 
 ## 📋 Sobre o Projeto
