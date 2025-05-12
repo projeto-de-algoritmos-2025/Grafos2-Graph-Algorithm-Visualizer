@@ -1,8 +1,6 @@
 # Graph Algorithm Visualizer
 
-<!--  imagem do app  -->
-
-<img src="./public/interGraph.logo.png" alt="logo"/>
+<img src="./public/interGraph.logo.png"/>
 
 <div align="center">
   <img src="https://img.shields.io/badge/Next.js-15.2.4-black?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
@@ -13,7 +11,7 @@
 
 ## 📋 Sobre o Projeto
 
-O **Graph Algorithm Visualizer** é uma plataforma interativa para criação, visualização e execução de algoritmos clássicos de grafos. O sistema permite que o usuário desenhe grafos (direcionados ou não), adicione/remova nós e arestas, defina pesos e execute algoritmos como Dijkstra, Prim e Kruskal, visualizando passo a passo o funcionamento de cada um.
+O **InterGraph** é uma plataforma interativa para criação, visualização e execução de algoritmos clássicos de grafos. O sistema permite que o usuário desenhe grafos (direcionados ou não), adicione/remova nós e arestas, defina pesos e execute algoritmos como Dijkstra, Prim e Kruskal, visualizando passo a passo o funcionamento de cada um.
 
 Ideal para estudantes, professores e entusiastas de algoritmos, a ferramenta facilita o entendimento visual dos conceitos fundamentais de grafos e caminhos mínimos.
 
