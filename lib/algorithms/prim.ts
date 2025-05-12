@@ -1,15 +1,21 @@
-import type { GraphData, AlgorithmStep } from "../types"
+import type { GraphData, AlgorithmStep } from "../types";
 
 // Prim's algorithm for minimum spanning tree
-export function runPrim(graphData: GraphData, startNode?: number | null): AlgorithmStep[] {
-  const steps: AlgorithmStep[] = []
-  const nodes = graphData.nodes.map((n) => n.id)
-  const visitOrder: number[] = [] // Para rastrear a ordem de visita dos nós
+export function runPrim(
+  graphData: GraphData,
+  startNode?: number | null
+): AlgorithmStep[] {
+  console.log(graphData);
+  console.log(startNode);
+  const steps: AlgorithmStep[] = [];
+  const nodes = graphData.nodes.map((n) => n.id);
+  const visitOrder: number[] = []; // Para rastrear a ordem de visita dos nós
 
-  if (nodes.length === 0) return steps
+  if (nodes.length === 0) return steps;
 
   // Se um nó inicial for fornecido, use-o; caso contrário, use o primeiro nó
-  const initialNode = startNode !== null && startNode !== undefined ? startNode : nodes[0]
+  const initialNode =
+    startNode !== null && startNode !== undefined ? startNode : nodes[0];
 
   // Verificar se o nó inicial existe no grafo
   if (!nodes.includes(initialNode)) {
@@ -19,14 +25,14 @@ export function runPrim(graphData: GraphData, startNode?: number | null): Algori
         Algoritmo: "Prim - Árvore Geradora Mínima",
         Status: "Erro - Nó inicial inválido",
       },
-    })
-    return steps
+    });
+    return steps;
   }
 
-  const visited = new Set<number>([initialNode])
-  visitOrder.push(initialNode) // Adicionar o nó inicial à ordem de visita
-  const mstEdges: { source: number; target: number }[] = []
-  let totalWeight = 0
+  const visited = new Set<number>([initialNode]);
+  visitOrder.push(initialNode); // Adicionar o nó inicial à ordem de visita
+  const mstEdges: { source: number; target: number }[] = [];
+  let totalWeight = 0;
 
   steps.push({
     description: `Iniciar algoritmo de Prim a partir do nó ${initialNode}.`,
@@ -39,24 +45,28 @@ export function runPrim(graphData: GraphData, startNode?: number | null): Algori
       "Peso Total": 0,
       "Ordem de Visita": initialNode.toString(),
     },
-  })
+  });
 
   while (visited.size < nodes.length) {
-    let minEdge: { source: number; target: number; weight: number } | null = null
+    let minEdge: { source: number; target: number; weight: number } | null =
+      null;
 
     // Find the minimum weight edge connecting a visited node to an unvisited node
     for (const edge of graphData.edges) {
-      const sourceVisited = visited.has(edge.source)
-      const targetVisited = visited.has(edge.target)
+      const sourceVisited = visited.has(edge.source);
+      const targetVisited = visited.has(edge.target);
 
       // One endpoint is visited and the other is not
-      if ((sourceVisited && !targetVisited) || (!edge.directed && !sourceVisited && targetVisited)) {
-        const source = sourceVisited ? edge.source : edge.target
-        const target = sourceVisited ? edge.target : edge.source
-        const weight = edge.weight
+      if (
+        (sourceVisited && !targetVisited) ||
+        (!edge.directed && !sourceVisited && targetVisited)
+      ) {
+        const source = sourceVisited ? edge.source : edge.target;
+        const target = sourceVisited ? edge.target : edge.source;
+        const weight = edge.weight;
 
         if (!minEdge || weight < minEdge.weight) {
-          minEdge = { source, target, weight }
+          minEdge = { source, target, weight };
         }
       }
     }
@@ -64,27 +74,34 @@ export function runPrim(graphData: GraphData, startNode?: number | null): Algori
     if (!minEdge) {
       // Graph is not connected
       // Identificar nós e arestas escolhidos e não escolhidos
-      const chosenNodes = Array.from(visited)
-      const notChosenNodes = nodes.filter((node) => !visited.has(node))
+      const chosenNodes = Array.from(visited);
+      const notChosenNodes = nodes.filter((node) => !visited.has(node));
 
       // Formatar as arestas escolhidas para exibição
-      const chosenEdgesFormatted = mstEdges.map((edge) => `${edge.source} → ${edge.target}`).join(", ")
+      const chosenEdgesFormatted = mstEdges
+        .map((edge) => `${edge.source} → ${edge.target}`)
+        .join(", ");
 
       // Identificar arestas não escolhidas
       const notChosenEdges = graphData.edges.filter(
         (edge) =>
           !mstEdges.some(
             (chosen) =>
-              (chosen.source === edge.source && chosen.target === edge.target) ||
-              (!edge.directed && chosen.source === edge.target && chosen.target === edge.source),
-          ),
-      )
+              (chosen.source === edge.source &&
+                chosen.target === edge.target) ||
+              (!edge.directed &&
+                chosen.source === edge.target &&
+                chosen.target === edge.source)
+          )
+      );
 
       // Formatar as arestas não escolhidas para exibição
       const notChosenEdgesFormatted =
         notChosenEdges.length > 0
-          ? notChosenEdges.map((edge) => `${edge.source} → ${edge.target}`).join(", ")
-          : "Nenhuma"
+          ? notChosenEdges
+              .map((edge) => `${edge.source} → ${edge.target}`)
+              .join(", ")
+          : "Nenhuma";
 
       steps.push({
         description: "O grafo não é conectado. Não é possível completar a AGM.",
@@ -100,22 +117,24 @@ export function runPrim(graphData: GraphData, startNode?: number | null): Algori
           "Ordem de Visita": visitOrder.join(" → "),
           "Nós Escolhidos": chosenNodes.join(", "),
           "Nós Não Escolhidos": notChosenNodes.join(", "),
-          "Arestas na AGM": chosenEdgesFormatted,
+          "Arestas Escolhidas na AGM": chosenEdgesFormatted,
           "Arestas Não Escolhidas": notChosenEdgesFormatted,
         },
-      })
-      break
+      });
+      break;
     }
 
     // Add the edge to the MST
-    mstEdges.push({ source: minEdge.source, target: minEdge.target })
+    mstEdges.push({ source: minEdge.source, target: minEdge.target });
 
     // Ensure we add the unvisited node
-    const nodeToAdd = visited.has(minEdge.source) ? minEdge.target : minEdge.source
-    visited.add(nodeToAdd)
-    visitOrder.push(nodeToAdd) // Adicionar à ordem de visita
+    const nodeToAdd = visited.has(minEdge.source)
+      ? minEdge.target
+      : minEdge.source;
+    visited.add(nodeToAdd);
+    visitOrder.push(nodeToAdd); // Adicionar à ordem de visita
 
-    totalWeight += minEdge.weight
+    totalWeight += minEdge.weight;
 
     steps.push({
       description: `Adicionar aresta (${minEdge.source}, ${minEdge.target}) com peso ${minEdge.weight} à AGM.`,
@@ -132,17 +151,19 @@ export function runPrim(graphData: GraphData, startNode?: number | null): Algori
         "Nós Restantes": nodes.length - visited.size,
         "Ordem de Visita": visitOrder.join(" → "),
       },
-    })
+    });
   }
 
   // Final step
   if (visited.size === nodes.length) {
     // Identificar nós e arestas escolhidos e não escolhidos
-    const chosenNodes = Array.from(visited)
-    const notChosenNodes = nodes.filter((node) => !visited.has(node))
+    const chosenNodes = Array.from(visited);
+    const notChosenNodes = nodes.filter((node) => !visited.has(node));
 
     // Formatar as arestas escolhidas para exibição
-    const chosenEdgesFormatted = mstEdges.map((edge) => `${edge.source} → ${edge.target}`).join(", ")
+    const chosenEdgesFormatted = mstEdges
+      .map((edge) => `${edge.source} → ${edge.target}`)
+      .join(", ");
 
     // Identificar arestas não escolhidas
     const notChosenEdges = graphData.edges.filter(
@@ -150,13 +171,19 @@ export function runPrim(graphData: GraphData, startNode?: number | null): Algori
         !mstEdges.some(
           (chosen) =>
             (chosen.source === edge.source && chosen.target === edge.target) ||
-            (!edge.directed && chosen.source === edge.target && chosen.target === edge.source),
-        ),
-    )
+            (!edge.directed &&
+              chosen.source === edge.target &&
+              chosen.target === edge.source)
+        )
+    );
 
     // Formatar as arestas não escolhidas para exibição
     const notChosenEdgesFormatted =
-      notChosenEdges.length > 0 ? notChosenEdges.map((edge) => `${edge.source} → ${edge.target}`).join(", ") : "Nenhuma"
+      notChosenEdges.length > 0
+        ? notChosenEdges
+            .map((edge) => `${edge.source} → ${edge.target}`)
+            .join(", ")
+        : "Nenhuma";
 
     steps.push({
       description: "Algoritmo concluído. Árvore Geradora Mínima encontrada.",
@@ -174,8 +201,8 @@ export function runPrim(graphData: GraphData, startNode?: number | null): Algori
         "Arestas na AGM": chosenEdgesFormatted,
         "Arestas Não Escolhidas": notChosenEdgesFormatted,
       },
-    })
+    });
   }
 
-  return steps
+  return steps;
 }

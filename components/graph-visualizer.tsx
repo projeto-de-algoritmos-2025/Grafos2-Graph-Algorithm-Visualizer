@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -36,6 +36,7 @@ import {
   SkipForward,
   X,
   Trash2,
+  Minus
 } from "lucide-react";
 import GraphCanvas from "@/components/graph-canvas";
 import type {
@@ -49,7 +50,6 @@ import type {
 import { runAlgorithm } from "@/lib/algorithms";
 import ResultTree from "@/components/result-tree";
 import { Download, Upload } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import {
   Dialog,
   DialogContent,
@@ -81,16 +81,26 @@ export default function GraphVisualizer() {
     target: number;
     weight: number;
   } | null>(null);
+  
+  const weightInputRef = useRef<HTMLInputElement | null>(null);
   const [inputWeight, setInputWeight] = useState<string>(
     selectedEdge?.weight.toString() || ""
   );
-  const [showWeightAlert, setShowWeightAlert] = useState(false);
   const [showWeightDialog, setShowWeightDialog] = useState(false);
+  const [dialogContent, setDialogContent] = useState({ title: "", description: "" });
+  const [hasSelectedArrow, setHasSelectedArrow] = useState(false);
+  const [isDirected, setIsDirected] = useState<boolean>(false);
+  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
 
-  // Add to history when graph changes
+  const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+
+
+
   useEffect(() => {
     if (graphData.nodes.length > 0 || graphData.edges.length > 0) {
-      // Only add to history if it's a new state
       if (historyIndex === history.length - 1) {
         setHistory([
           ...history.slice(0, historyIndex + 1),
@@ -101,7 +111,6 @@ export default function GraphVisualizer() {
     }
   }, [graphData]);
 
-  // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "n" || e.key === "N") {
@@ -123,7 +132,6 @@ export default function GraphVisualizer() {
     };
   }, [history, historyIndex]);
 
-  // Animation loop for algorithm visualization
   useEffect(() => {
     let animationTimer: NodeJS.Timeout | null = null;
 
@@ -144,11 +152,56 @@ export default function GraphVisualizer() {
     };
   }, [isPlaying, currentStep, algorithmSteps, animationSpeed]);
 
-  useEffect(() => {
-    if (selectedEdge) {
-      setInputWeight(selectedEdge.weight.toString());
+    useEffect(() => {
+    if (selectedEdge && weightInputRef.current) {
+      weightInputRef.current.focus();
     }
   }, [selectedEdge]);
+
+useEffect(() => {
+  const canvas = canvasRef.current;
+  if (!canvas) return;
+
+  const handleWheel = (e: WheelEvent) => {
+    e.preventDefault();
+    const scaleAmount = -e.deltaY * 0.001;
+    const newScale = Math.min(Math.max(transform.scale + scaleAmount, 0.5), 2); // Clamp between 0.5 and 2
+
+    setTransform((prev) => ({
+      ...prev,
+      scale: newScale,
+    }));
+  };
+
+  const handleMouseDown = (e: MouseEvent) => {
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - transform.x, y: e.clientY - transform.y });
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDragging || !dragStart) return;
+    const newX = e.clientX - dragStart.x;
+    const newY = e.clientY - dragStart.y;
+    setTransform((prev) => ({ ...prev, x: newX, y: newY }));
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    setDragStart(null);
+  };
+
+  canvas.addEventListener("wheel", handleWheel, { passive: false });
+  canvas.addEventListener("mousedown", handleMouseDown);
+  window.addEventListener("mousemove", handleMouseMove);
+  window.addEventListener("mouseup", handleMouseUp);
+
+  return () => {
+    canvas.removeEventListener("wheel", handleWheel);
+    canvas.removeEventListener("mousedown", handleMouseDown);
+    window.removeEventListener("mousemove", handleMouseMove);
+    window.removeEventListener("mouseup", handleMouseUp);
+  };
+}, [transform, isDragging, dragStart]);
 
   const handleUndo = () => {
     if (historyIndex > 0) {
@@ -172,10 +225,24 @@ export default function GraphVisualizer() {
   };
 
   const handleEdgeAdd = (edge: Edge) => {
-    setGraphData((prev) => ({
-      ...prev,
-      edges: [...prev.edges, edge],
-    }));
+    if (isDirected) {
+      setGraphData(prev => ({
+        ...prev,
+        edges: [...prev.edges, { ...edge, directed: true }],
+      }));
+    } else {
+      const undirected = { ...edge, directed: false };
+      const reverse = {
+        source: edge.target,
+        target: edge.source,
+        weight: edge.weight,
+        directed: false,
+      };
+      setGraphData(prev => ({
+        ...prev,
+        edges: [...prev.edges, undirected, reverse],
+      }));
+    }
   };
 
   const handleNodeMove = (id: number, x: number, y: number) => {
@@ -188,13 +255,11 @@ export default function GraphVisualizer() {
   };
 
   const handleNodeUpdate = (id: number, newId: number) => {
-    // Update node ID
     setGraphData((prev) => ({
       ...prev,
       nodes: prev.nodes.map((node) =>
         node.id === id ? { ...node, id: newId } : node
       ),
-      // Also update edges that reference this node
       edges: prev.edges.map((edge) => ({
         ...edge,
         source: edge.source === id ? newId : edge.source,
@@ -225,6 +290,7 @@ export default function GraphVisualizer() {
     weight: number
   ) => {
     setSelectedEdge({ source: sourceId, target: targetId, weight });
+    setInputWeight(weight.toString());
   };
 
   const updateSelectedEdgeWeight = (weightStr: string) => {
@@ -237,28 +303,22 @@ export default function GraphVisualizer() {
     }
   };
 
-  // Modificar apenas a parte que executa o algoritmo para garantir que os parâmetros corretos sejam passados
   const handleRunAlgorithm = () => {
     if (!selectedAlgorithm) return;
 
-    // Verificar se o algoritmo precisa de nó de origem
     if (
       (selectedAlgorithm === "dijkstra" || selectedAlgorithm === "prim") &&
       sourceNode === null
     ) {
-      // Se não tiver nó de origem e precisar, não executar
       return;
     }
 
-    // Para Dijkstra, verificar se o nó de destino é válido quando especificado
     if (selectedAlgorithm === "dijkstra" && targetNode !== null) {
       if (!graphData.nodes.some((node) => node.id === targetNode)) {
-        // Nó de destino inválido
         return;
       }
     }
 
-    // Garantir que targetNode seja null ou number, nunca string
     const targetNodeValue = targetNode === null ? null : Number(targetNode);
 
     const steps = runAlgorithm(
@@ -267,6 +327,20 @@ export default function GraphVisualizer() {
       sourceNode,
       targetNodeValue
     );
+
+    const hasUndirectedEdge = graphData.edges.some(edge => !edge.directed);
+      if (selectedAlgorithm === "dijkstra" && hasUndirectedEdge) {
+        const invalidEdge = graphData.edges.find(edge => !edge.directed);
+        if (invalidEdge) {
+          setDialogContent({
+            title: "Aresta não-direcionada",
+            description: `A aresta entre ${invalidEdge.source} e ${invalidEdge.target} não é direcionada. O algoritmo de Dijkstra requer grafos direcionados.`,
+          });
+          setShowWeightDialog(true); // Reutiliza o mesmo Dialog
+          return;
+        }
+      }
+
     setAlgorithmSteps(steps);
     setCurrentStep(0);
     setIsPlaying(false);
@@ -331,7 +405,6 @@ export default function GraphVisualizer() {
         if (typeof result === "string") {
           const importedData: GraphData = JSON.parse(result);
 
-          // Validação básica da estrutura
           if (
             !Array.isArray(importedData.nodes) ||
             !Array.isArray(importedData.edges)
@@ -350,11 +423,9 @@ export default function GraphVisualizer() {
     } catch (error) {
       alert("Erro ao importar arquivo: " + (error as Error).message);
     } finally {
-      // Limpa o input para permitir nova seleção do mesmo arquivo
       event.target.value = "";
     }
   };
-  // Verificar se o algoritmo precisa de nó de origem
   const needsSourceNode =
     selectedAlgorithm === "dijkstra" || selectedAlgorithm === "prim";
 
@@ -368,9 +439,12 @@ export default function GraphVisualizer() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant={activeTool === "node" ? "default" : "outline"}
+                  variant={activeTool && activeTool === "node" ? "default" : "outline"}
                   size="icon"
-                  onClick={() => setActiveTool("node")}
+                  onClick={() => {
+                      setActiveTool("node");
+                      setHasSelectedArrow(false);
+                    }}
                 >
                   <Circle className="h-5 w-5" />
                 </Button>
@@ -385,15 +459,40 @@ export default function GraphVisualizer() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant={activeTool === "edge" ? "default" : "outline"}
+                  variant={hasSelectedArrow && !isDirected ? "default" : "outline"}
                   size="icon"
-                  onClick={() => setActiveTool("edge")}
+                  onClick={() => {
+                    setActiveTool("edge");
+                    setIsDirected(false);
+                    setHasSelectedArrow(true);
+                  }}
+                                >
+                  <Minus   className="h-5 w-5 rotate-180" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Aresta Não-Direcional</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={hasSelectedArrow && isDirected ? "default" : "outline"}
+                  size="icon"
+                  onClick={() => {
+                      setActiveTool("edge");
+                      setIsDirected(true);
+                      setHasSelectedArrow(true);
+                    }}
                 >
                   <ArrowRight className="h-5 w-5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Ferramenta Aresta (E)</p>
+                <p>Aresta Direcional</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -540,37 +639,42 @@ export default function GraphVisualizer() {
               <span className="text-sm font-medium">Peso da Aresta:</span>
               <div className="flex items-center gap-2">
                 <input
+                  ref={weightInputRef}
                   type="number"
                   step="0.1"
                   value={inputWeight}
+                  onFocus={() => setInputWeight("")}
                   onChange={(e) => {
-                    setInputWeight(e.target.value);
+                    const newValue = e.target.value;
+                    setInputWeight(newValue);
+                    
+                    const num = parseFloat(newValue);
+                    if (!isNaN(num) && num > 0) {
+                      updateSelectedEdgeWeight(newValue);
+                      setShowWeightDialog(false);
+                    }
                   }}
                   onBlur={(e) => {
                     const value = e.target.value;
                     const num = parseFloat(value);
-                    if (isNaN(num) || num <= 0) {
-                      setInputWeight(selectedEdge?.weight.toString() || "");
-                    } else {
+                    
+                    if (!isNaN(num) && num > 0) {
                       updateSelectedEdgeWeight(value);
+                      setShowWeightDialog(false);
+                    } else {
+                      setInputWeight(selectedEdge?.weight.toString() || "");
+                      setShowWeightDialog(true);
                     }
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      const num = parseFloat(inputWeight);
-                      if (!isNaN(num) && num > 0) {
-                        updateSelectedEdgeWeight(inputWeight);
-                        setShowWeightDialog(false);
-                      } else {
-                        setShowWeightDialog(true);
-                        setInputWeight(selectedEdge?.weight.toString() || "");
-                      }
+                      weightInputRef.current?.blur(); 
                     }
                   }}
                   className="w-20 h-8 px-2 border rounded"
                 />
-                <Dialog
+ <Dialog
                   open={showWeightDialog}
                   onOpenChange={setShowWeightDialog}
                 >
@@ -589,6 +693,7 @@ export default function GraphVisualizer() {
                   </DialogContent>
                 </Dialog>
 
+
                 <span className="text-sm text-muted-foreground">
                   Aresta: {selectedEdge.source} → {selectedEdge.target}
                 </span>
@@ -604,23 +709,27 @@ export default function GraphVisualizer() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> 
           <div className="flex flex-col gap-4">
             <div className="border rounded-lg overflow-hidden bg-background">
-              <GraphCanvas
-                graphData={graphData}
-                activeTool={activeTool}
-                onNodeAdd={handleNodeAdd}
-                onEdgeAdd={handleEdgeAdd}
-                onNodeMove={handleNodeMove}
-                onNodeUpdate={handleNodeUpdate}
-                onEdgeUpdate={handleEdgeUpdate}
-                onEdgeSelect={handleEdgeSelect}
-                algorithmStep={algorithmSteps[currentStep]}
-                width={500}
-                height={500}
-              />
-            </div>
+                <GraphCanvas
+                  graphData={graphData}
+                  activeTool={activeTool ?? "node"}
+                  onNodeAdd={handleNodeAdd}
+                  onEdgeAdd={handleEdgeAdd}
+                  onNodeMove={handleNodeMove}
+                  onNodeUpdate={handleNodeUpdate}
+                  onEdgeUpdate={handleEdgeUpdate}
+                  onEdgeSelect={(source, target, weight) => {
+                    handleEdgeSelect(source, target, weight);
+                    setSelectedNode(null);
+                  }}
+                  algorithmStep={algorithmSteps[currentStep]}
+                  width={500}
+                  height={500}
+                />
+              </div>
+
 
             <Card className="w-full">
               <CardContent className="p-4">
