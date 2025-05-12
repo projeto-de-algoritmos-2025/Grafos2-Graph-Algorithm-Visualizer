@@ -638,7 +638,7 @@ useEffect(() => {
             <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
               <span className="text-sm font-medium">Peso da Aresta:</span>
               <div className="flex items-center gap-2">
-                <input
+                {/* <input
                   ref={weightInputRef}
                   type="number"
                   step="0.1"
@@ -673,8 +673,50 @@ useEffect(() => {
                     }
                   }}
                   className="w-20 h-8 px-2 border rounded"
+                /> */}
+                <input
+                  ref={weightInputRef}
+                  type="number"
+                  step="0.1"
+                  value={inputWeight}
+                  onFocus={() => setInputWeight("")} 
+                  onChange={(e) => setInputWeight(e.target.value)} 
+                  onBlur={(e) => {
+                    const value = e.target.value;
+                    const num = parseFloat(value);
+                    
+                    if (value === "") {
+                      // Se vazio, restaura o valor original
+                      setInputWeight(selectedEdge.weight.toString());
+                    } else if (!isNaN(num) && num > 0) {
+                      // Se válido, salva
+                      updateSelectedEdgeWeight(value);
+                    } else {
+                      // Se inválido, mostra erro e restaura
+                      setShowWeightDialog(true);
+                      setInputWeight(selectedEdge.weight.toString());
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const value = inputWeight;
+                      const num = parseFloat(value);
+                      
+                      if (value === "") {
+                        setInputWeight(selectedEdge.weight.toString());
+                      } else if (!isNaN(num) && num > 0) {
+                        updateSelectedEdgeWeight(value);
+                        weightInputRef.current?.blur();
+                      } else {
+                        setShowWeightDialog(true);
+                        setInputWeight(selectedEdge.weight.toString());
+                      }
+                    }
+                  }}
+                  className="w-20 h-8 px-2 border rounded"
                 />
- <Dialog
+                <Dialog
                   open={showWeightDialog}
                   onOpenChange={setShowWeightDialog}
                 >
