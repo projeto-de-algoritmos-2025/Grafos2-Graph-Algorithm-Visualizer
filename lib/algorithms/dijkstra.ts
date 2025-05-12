@@ -13,6 +13,7 @@ export function runDijkstra(
   const unvisited = new Set(nodes)
   const visitOrder: number[] = [] // Para rastrear a ordem de visita dos nós
 
+  console.log(graphData)
   // Initialize distances
   for (const node of nodes) {
     distances[node] = node === sourceNode ? 0 : Number.POSITIVE_INFINITY
@@ -26,7 +27,7 @@ export function runDijkstra(
     stats: {
       Algoritmo: "Dijkstra - Caminho Mínimo",
       "Nó de Origem": sourceNode,
-      "Nó de Destino": targetNode !== null ? targetNode : "Todos",
+      "Nó de Destino": targetNode !== null ? targetNode : "Nenhum",
       "Ordem de Visita": "",
     },
   })
@@ -90,9 +91,11 @@ export function runDijkstra(
       },
     })
 
-    // Get all edges from the current node
-    const edges = graphData.edges.filter((e) => e.source === current || (!e.directed && e.target === current))
-
+// Get all edges from the current node considering direction
+const edges = graphData.edges.filter((e) => 
+  (e.source === current && e.directed) || 
+  (e.source === current || e.target === current) && !e.directed
+);
     // Update distances to neighbors
     for (const edge of edges) {
       const neighbor = edge.source === current ? edge.target : edge.source
@@ -121,26 +124,6 @@ export function runDijkstra(
             },
           })
 
-          // Se o vizinho é o nó de destino, podemos parar o algoritmo
-          if (targetNode !== null && neighbor === targetNode) {
-            foundTarget = true
-            visitOrder.push(neighbor) // Adicionar o destino à ordem de visita
-            steps.push({
-              description: `Nó de destino ${targetNode} alcançado com distância ${distanceToNeighbor}.`,
-              highlightedNodes: [current, neighbor],
-              visitedNodes: [...visitedNodes, neighbor],
-              highlightedEdges: [{ source: current, target: neighbor }],
-              nodeValues: { ...distances },
-              stats: {
-                "Nó Atual": current,
-                "Nó de Destino": neighbor,
-                "Distância Final": distanceToNeighbor,
-                "Nós Visitados": visitedNodes.length + 1,
-                "Ordem de Visita": visitOrder.join(" → "),
-              },
-            })
-            break // Sair do loop de vizinhos
-          }
         } else {
           steps.push({
             description: `Não é necessário atualizar o nó ${neighbor}, pois o caminho atual (${distances[neighbor]}) é mais curto que o novo caminho (${distanceToNeighbor}).`,

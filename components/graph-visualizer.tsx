@@ -358,13 +358,11 @@ export default function GraphVisualizer() {
   const needsSourceNode =
     selectedAlgorithm === "dijkstra" || selectedAlgorithm === "prim";
 
-  // Verificar se o algoritmo pode usar nó de destino
   const canUseTargetNode = selectedAlgorithm === "dijkstra";
 
   return (
     <div className="w-full max-w-7xl">
       <div className="flex flex-col gap-4">
-        {/* Barra de ferramentas */}
         <div className="flex flex-wrap gap-2 items-center">
           <TooltipProvider>
             <Tooltip>
@@ -536,7 +534,6 @@ export default function GraphVisualizer() {
           </TooltipProvider>
         </div>
 
-        {/* Edge Weight Editor - Always reserve space */}
         <div className="h-12">
           {selectedEdge && (
             <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
@@ -625,18 +622,15 @@ export default function GraphVisualizer() {
               />
             </div>
 
-            {/* Barra de controle de algoritmo - Agora com largura total e controles fixos */}
             <Card className="w-full">
               <CardContent className="p-4">
                 <div className="flex flex-col gap-4">
-                  {/* Primeira linha: seleção de algoritmo e nós */}
                   <div className="flex flex-wrap gap-2 items-center justify-between">
                     <div className="flex flex-wrap items-center gap-2">
                       <Select
                         value={selectedAlgorithm || ""}
                         onValueChange={(value) => {
                           setSelectedAlgorithm(value as Algorithm);
-                          // Limpar resultados ao mudar de algoritmo
                           clearResults();
                         }}
                       >
@@ -650,7 +644,6 @@ export default function GraphVisualizer() {
                         </SelectContent>
                       </Select>
 
-                      {/* Seletor de nó de origem - visível para Dijkstra e Prim */}
                       <div
                         className={`flex items-center gap-2 ${
                           needsSourceNode ? "opacity-100" : "opacity-50"
@@ -682,7 +675,6 @@ export default function GraphVisualizer() {
                         </Select>
                       </div>
 
-                      {/* Seletor de nó de destino - visível apenas para Dijkstra */}
                       <div
                         className={`flex items-center gap-2 ${
                           canUseTargetNode ? "opacity-100" : "opacity-50"
@@ -692,7 +684,6 @@ export default function GraphVisualizer() {
                         <Select
                           value={targetNode?.toString() || ""}
                           onValueChange={(value) => {
-                            // Limpar resultados ao mudar o nó de destino
                             clearResults();
                             setTargetNode(
                               value === "none" ? null : Number(value)
@@ -731,7 +722,6 @@ export default function GraphVisualizer() {
                       </Button>
                     </div>
 
-                    {/* Controles de reprodução - sempre visíveis */}
                     <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
@@ -774,7 +764,6 @@ export default function GraphVisualizer() {
                     </div>
                   </div>
 
-                  {/* Segunda linha: controle de velocidade (visível apenas quando há passos) */}
                   {algorithmSteps.length > 0 && (
                     <div className="flex items-center gap-4">
                       <span className="text-sm">Velocidade:</span>
@@ -789,7 +778,6 @@ export default function GraphVisualizer() {
                     </div>
                   )}
 
-                  {/* Terceira linha: descrição do passo atual (visível apenas quando há passos) */}
                   {algorithmSteps.length > 0 && algorithmSteps[currentStep] && (
                     <div className="text-sm p-2 bg-muted rounded-md">
                       <div className="font-medium mb-1">
