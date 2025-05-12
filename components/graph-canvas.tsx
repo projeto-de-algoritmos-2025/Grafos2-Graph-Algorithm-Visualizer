@@ -441,7 +441,6 @@ export default function GraphCanvas({
               type="number"
               value={newNodeId}
               onChange={(e) => {
-                console.log(e)
                 setNewNodeId(e.target.value);
               }}
               className="w-20"
