@@ -22,6 +22,11 @@ O **InterGraph** é uma plataforma interativa para criação, visualização e e
 
 Ideal para estudantes, professores e entusiastas de algoritmos, a ferramenta facilita o entendimento visual dos conceitos fundamentais de grafos e caminhos mínimos.
 
+## Apresentação:
+- [Video 1 - Funcionalidades do InterGraph, por Edilberto Cantuária](https://youtu.be/nO1wgUybLWo)
+- [Video 2 - Explicação do Algorítmo, por Kauan Eiras]()
+
+
 ### 🎯 Funcionalidades
 
 - Criação e edição visual de grafos (nós e arestas, direcionados ou não)
