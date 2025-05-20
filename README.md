@@ -24,7 +24,7 @@ Ideal para estudantes, professores e entusiastas de algoritmos, a ferramenta fac
 
 ## Apresentação:
 - [Video 1 - Funcionalidades do InterGraph, por Edilberto Cantuária](https://youtu.be/nO1wgUybLWo)
-- [Video 2 - Explicação do Algorítmo, por Kauan Eiras]()
+- [Video 2 - Explicação do Algorítmo, por Kauan Eiras](https://youtu.be/WXc20q_8qzA)
 
 
 ### 🎯 Funcionalidades
